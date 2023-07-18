@@ -86,6 +86,7 @@ class DesktopView extends GetView<DesktopController> {
                 labelText: 'HA地址',
                 hintText: 'localhost',
               ),
+              controller: TextEditingController(text: controller.ip.value),
             ),
           ),
           const SizedBox(width: 10),
@@ -102,6 +103,7 @@ class DesktopView extends GetView<DesktopController> {
                 labelText: '端口号',
                 hintText: '8123',
               ),
+              controller: TextEditingController(text: controller.port.value.toString()),
               onChanged: (value) {
                 if (value.isEmpty) {
                   controller.port.value = 8123;
@@ -126,6 +128,7 @@ class DesktopView extends GetView<DesktopController> {
                   controller.nodeId.value = value;
                 }
               },
+              controller: TextEditingController(text: controller.nodeId.value),
             ),
           )
         ],
@@ -151,6 +154,7 @@ class DesktopView extends GetView<DesktopController> {
                 labelText: 'HA Access Key',
                 hintText: 'xxx',
               ),
+              controller: TextEditingController(text: controller.key.value),
             ),
           ),
         ],
@@ -231,21 +235,20 @@ class DesktopView extends GetView<DesktopController> {
               style: const TextStyle(color: Colors.blueAccent, fontSize: 20),
             ),
             SfRangeSlider(
-              min: 0,
-              max: 100,
-              stepSize: 1,
-              values: SfRangeValues(controller.minBrightness.value.toDouble(),
-                  controller.maxBrightness.value.toDouble()),
-              onChanged: (v) {
-                controller.pause.value = true;
-                controller.minBrightness.value = v.start.round();
-                controller.maxBrightness.value = v.end.round();
-                controller.saveParas();
-              },
-              onChangeEnd: (v){
-                controller.pause.value = false;
-              }
-            ),
+                min: 0,
+                max: 100,
+                stepSize: 1,
+                values: SfRangeValues(controller.minBrightness.value.toDouble(),
+                    controller.maxBrightness.value.toDouble()),
+                onChanged: (v) {
+                  controller.pause.value = true;
+                  controller.minBrightness.value = v.start.round();
+                  controller.maxBrightness.value = v.end.round();
+                  controller.saveParas();
+                },
+                onChangeEnd: (v) {
+                  controller.pause.value = false;
+                }),
           ],
         ));
   }

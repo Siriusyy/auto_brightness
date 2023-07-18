@@ -132,7 +132,7 @@ class DesktopController extends GetxController {
         label: '退出',
       ),
     ]));
-    trayManager.addListener(_MyTrayListener());
+    trayManager.addListener(_MyTrayListener(this));
   }
 
   Future<void> setupStartUp(bool enable) async {
@@ -159,6 +159,10 @@ class DesktopController extends GetxController {
     minSensorValue.value = prefs.getInt("minSensorValue")!;
     maxSensorValue.value = prefs.getInt("maxSensorValue")!;
     isAutoStart.value = prefs.getBool("isAutoStart")!;
+    port.value = prefs.getInt("port")!;
+    ip.value = prefs.getString("ip")!;
+    nodeId.value = prefs.getString("nodeId")!;
+    key.value = prefs.getString("key")!;
   }
 
   Future<void> saveParas() async {
@@ -168,6 +172,10 @@ class DesktopController extends GetxController {
     prefs.setInt("minSensorValue", minSensorValue.value);
     prefs.setInt("maxSensorValue", maxSensorValue.value);
     prefs.setBool("isAutoStart", isAutoStart.value);
+    prefs.setInt("port", port.value);
+    prefs.setString("ip", ip.value);
+    prefs.setString("nodeId", nodeId.value);
+    prefs.setString("key", key.value);
   }
 
   Future<void> initHotKeys() async {
@@ -225,6 +233,9 @@ class DesktopController extends GetxController {
 }
 
 class _MyTrayListener extends TrayListener {
+  final DesktopController controller;
+  _MyTrayListener(this.controller);
+
   @override
   void onTrayIconMouseDown() {
     appWindow.show();
@@ -244,6 +255,7 @@ class _MyTrayListener extends TrayListener {
       appWindow.show();
     } else if (menuItem.key == 'exit_app') {
       hotKeyManager.unregisterAll();
+      controller.saveParas();
       appWindow.close();
     }
   }
