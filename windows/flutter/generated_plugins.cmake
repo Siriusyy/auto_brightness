@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_windows
   hotkey_manager
+  screen_brightness_windows
   tray_manager
   url_launcher_windows
 )

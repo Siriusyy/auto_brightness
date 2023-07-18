@@ -1,21 +1,19 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
-import 'package:belatuk_http_server/belatuk_http_server.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'package:dio/dio.dart';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/cupertino.dart' hide MenuItem;
 import 'package:get/get.dart';
-import 'package:launch_at_startup/launch_at_startup.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:udp/udp.dart';
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
-import 'package:win32/win32.dart';
-import 'package:tray_manager/tray_manager.dart';
-import 'package:process_run/shell.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path/path.dart' as path;
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:win32/win32.dart';
 
 class DesktopController extends GetxController {
   final sensorValue = (-1).obs;
@@ -25,32 +23,39 @@ class DesktopController extends GetxController {
   final brightness = 0.obs;
   final maxBrightness = 100.obs;
   final minBrightness = 0.obs;
+  final ip = "localhost".obs;
+  final port = 8123.obs;
+  final nodeId = "node1".obs;
+  final key = "".obs;
+  final pause = false.obs;
 
   static final monitors = <int>[];
   final physicalMonitorHandles = <int>[];
   static int nextBrightness = 0;
 
   final isAutoStart = false.obs;
-  final isUsbMode = false.obs;
 
-  Future<void> startUdpService() async {
-    var socket = await UDP.bind(Endpoint.any(port: const Port(8888)));
-    socket.asStream().listen((event) {
-      if (!isUsbMode.value) {
-        sensorValue.value = int.parse(String.fromCharCodes(event!.data));
+  Future<void> startHttpService() async {
+    Timer.periodic(const Duration(seconds: 1), (timer) async {
+      final url = 'http://$ip:$port/states/$nodeId';
+      try {
+        final response = await Dio().get(
+          url,
+          options: Options(headers: {
+            'Authorization': 'Bearer $key',
+            "content-type": "application/json"
+          }),
+        );
+        final data = jsonDecode(response.data) as Map<String, dynamic>;
+        sensorValue.value = int.tryParse(data['value'].toString()) ?? 0;
+      } catch (e) {
+        print(e);
       }
     });
   }
 
-  Future<void> startHttpService() async {
-    var server = await HttpServer.bind('0.0.0.0', 9999);
-    server.transform(HttpBodyHandler()).listen((body) {
-      if (isUsbMode.value) sensorValue.value = int.parse(body.body.toString());
-      body.request.response.close();
-    });
-  }
-
-  static int enumMonitorCallback(int hMonitor, int hDC, Pointer lpRect, int lParam) {
+  static int enumMonitorCallback(
+      int hMonitor, int hDC, Pointer lpRect, int lParam) {
     monitors.add(hMonitor);
     return TRUE;
   }
@@ -59,14 +64,18 @@ class DesktopController extends GetxController {
     monitors.clear();
     physicalMonitorHandles.clear();
     var result = FALSE;
-    result = EnumDisplayMonitors(NULL, nullptr, Pointer.fromFunction<MonitorEnumProc>(enumMonitorCallback, 0), NULL);
+    result = EnumDisplayMonitors(NULL, nullptr,
+        Pointer.fromFunction<MonitorEnumProc>(enumMonitorCallback, 0), NULL);
     if (result == FALSE) return;
     for (var monitor in monitors) {
       final physicalMonitorCountPtr = calloc<DWORD>();
-      result = GetNumberOfPhysicalMonitorsFromHMONITOR(monitor, physicalMonitorCountPtr);
+      result = GetNumberOfPhysicalMonitorsFromHMONITOR(
+          monitor, physicalMonitorCountPtr);
       if (result == FALSE) return;
-      final physicalMonitorArray = calloc<PHYSICAL_MONITOR>(physicalMonitorCountPtr.value);
-      result = GetPhysicalMonitorsFromHMONITOR(monitor, physicalMonitorCountPtr.value, physicalMonitorArray);
+      final physicalMonitorArray =
+          calloc<PHYSICAL_MONITOR>(physicalMonitorCountPtr.value);
+      result = GetPhysicalMonitorsFromHMONITOR(
+          monitor, physicalMonitorCountPtr.value, physicalMonitorArray);
       if (result == FALSE) return;
       physicalMonitorHandles.add(physicalMonitorArray.cast<IntPtr>().value);
     }
@@ -74,21 +83,27 @@ class DesktopController extends GetxController {
     final minimumBrightnessPtr = calloc<DWORD>();
     final currentBrightnessPtr = calloc<DWORD>();
     final maximumBrightnessPtr = calloc<DWORD>();
-    result = GetMonitorBrightness(physicalMonitorHandles[0], minimumBrightnessPtr, currentBrightnessPtr, maximumBrightnessPtr);
+    result = GetMonitorBrightness(physicalMonitorHandles[0],
+        minimumBrightnessPtr, currentBrightnessPtr, maximumBrightnessPtr);
     if (result == FALSE) return;
     nextBrightness = currentBrightnessPtr.value;
     brightness.value = currentBrightnessPtr.value;
     Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      refreshBrightness();
+      if (!pause.value) {
+        refreshBrightness();
+      }
     });
   }
 
   void refreshBrightness() {
     if (sensorValue.value == -1) return;
     var mSensorValue = sensorValue.value;
-    if (mSensorValue > maxSensorValue.value) mSensorValue = maxSensorValue.value;
-    if (mSensorValue < minSensorValue.value) mSensorValue = minSensorValue.value;
-    var mBrightness = ((mSensorValue / maxSensorValue.value) * maxBrightness.value).toInt();
+    if (mSensorValue > maxSensorValue.value)
+      mSensorValue = maxSensorValue.value;
+    if (mSensorValue < minSensorValue.value)
+      mSensorValue = minSensorValue.value;
+    var mBrightness =
+        ((mSensorValue / maxSensorValue.value) * maxBrightness.value).toInt();
     if (mBrightness > maxBrightness.value) mBrightness = maxBrightness.value;
     if (mBrightness < minBrightness.value) mBrightness = minBrightness.value;
     brightness.value = mBrightness;
@@ -120,15 +135,6 @@ class DesktopController extends GetxController {
     trayManager.addListener(_MyTrayListener());
   }
 
-  Future<void> initUsbMode() async {
-    var shell = Shell();
-    Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (isUsbMode.value) {
-        await shell.run("${path.dirname(Platform.resolvedExecutable)}\\adb.exe reverse tcp:9999 tcp:9999");
-      }
-    });
-  }
-
   Future<void> setupStartUp(bool enable) async {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -153,7 +159,6 @@ class DesktopController extends GetxController {
     minSensorValue.value = prefs.getInt("minSensorValue")!;
     maxSensorValue.value = prefs.getInt("maxSensorValue")!;
     isAutoStart.value = prefs.getBool("isAutoStart")!;
-    isUsbMode.value = prefs.getBool("isUsbMode")!;
   }
 
   Future<void> saveParas() async {
@@ -163,12 +168,13 @@ class DesktopController extends GetxController {
     prefs.setInt("minSensorValue", minSensorValue.value);
     prefs.setInt("maxSensorValue", maxSensorValue.value);
     prefs.setBool("isAutoStart", isAutoStart.value);
-    prefs.setBool("isUsbMode", isUsbMode.value);
   }
 
   Future<void> initHotKeys() async {
     await hotKeyManager.register(
-      HotKey(KeyCode.keyQ, modifiers: [KeyModifier.alt, KeyModifier.shift], scope: HotKeyScope.system),
+      HotKey(KeyCode.keyQ,
+          modifiers: [KeyModifier.alt, KeyModifier.shift],
+          scope: HotKeyScope.system),
       keyDownHandler: (hotKey) {
         if (brightness.value > 95) {
           brightness.value = 100;
@@ -181,7 +187,9 @@ class DesktopController extends GetxController {
       },
     );
     await hotKeyManager.register(
-      HotKey(KeyCode.keyA, modifiers: [KeyModifier.alt, KeyModifier.shift], scope: HotKeyScope.system),
+      HotKey(KeyCode.keyA,
+          modifiers: [KeyModifier.alt, KeyModifier.shift],
+          scope: HotKeyScope.system),
       keyDownHandler: (hotKey) {
         if (brightness.value < 5) {
           brightness.value = 0;
@@ -200,10 +208,10 @@ class DesktopController extends GetxController {
     setupTray();
     initParas();
     initMonitors();
-    startUdpService();
+    // startUdpService();
     startHttpService();
-    initUsbMode();
-    initHotKeys();
+    // initUsbMode();
+    // initHotKeys();
     super.onInit();
   }
 

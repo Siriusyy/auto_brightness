@@ -9,7 +9,7 @@ import bitsdojo_window_macos
 import hotkey_manager
 import package_info_plus_macos
 import screen_brightness_macos
-import shared_preferences_macos
+import shared_preferences_foundation
 import tray_manager
 import url_launcher_macos
 import wakelock_macos

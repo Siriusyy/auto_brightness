@@ -1,10 +1,8 @@
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
-
 import 'package:get/get.dart';
 import 'package:oktoast/oktoast.dart';
 import 'package:syncfusion_flutter_sliders/sliders.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/desktop_controller.dart';
 
@@ -18,7 +16,8 @@ class DesktopView extends GetView<DesktopController> {
           Expanded(
             child: SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                 child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -27,9 +26,9 @@ class DesktopView extends GetView<DesktopController> {
                       _buildControlBrightness(),
                       _buildControlSensor(),
                       _buildStartUpButton(),
-                      _buildUseUsbButton(),
-                      _buildSysKeyButton(),
-                      _buildAbout(),
+                      _buildIpAndPortInput(),
+                      _buildAccessKeyInput(),
+                      // _buildSysKeyButton(),
                     ],
                   ),
                 ),
@@ -43,13 +42,14 @@ class DesktopView extends GetView<DesktopController> {
 
   Widget _buildSysKeyButton() {
     return Container(
-      margin: const EdgeInsets.only(top: 10),
+      margin: const EdgeInsets.only(top: 20),
       child: ElevatedButton(
         onPressed: () {
           Get.defaultDialog(
             title: "使用快捷键调节亮度",
             titleStyle: const TextStyle(fontWeight: FontWeight.normal),
-            middleText: "使用前先关闭手机端APP\n使用 Alt + Shift + Q 增加亮度\n使用 Alt + Shift + A 减小亮度",
+            middleText:
+                "使用前先关闭手机端APP\n使用 Alt + Shift + Q 增加亮度\n使用 Alt + Shift + A 减小亮度",
             textConfirm: "好的",
             onConfirm: () => Get.back(),
           );
@@ -62,22 +62,95 @@ class DesktopView extends GetView<DesktopController> {
     );
   }
 
-  Widget _buildAbout() {
+  Widget _buildIpAndPortInput() {
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 18),
-      child: Column(
+      margin: const EdgeInsets.only(top: 10),
+      child: Row(
         children: [
-          const Divider(),
-          const Text("本软件的使用完全免费，如果喜欢，请在 bilibili 关注我，谢谢！"),
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () async {
-              await launchUrl(Uri.parse("https://space.bilibili.com/5057929"));
-            },
-            child: const Text(
-              "点击访问：萝卜北的杂货铺",
-              style: TextStyle(fontWeight: FontWeight.normal),
+          Expanded(
+            child: TextField(
+              onChanged: (value) {
+                if (value.isNotEmpty) {
+                  if (!value.isIPv4) {
+                    showToast("请输入合法的IP地址",
+                        duration: Duration(milliseconds: 800));
+                  } else {
+                    controller.ip.value = value;
+                  }
+                } else {
+                  controller.ip.value = "localhost";
+                }
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'HA地址',
+                hintText: 'localhost',
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            ":",
+            style: TextStyle(fontSize: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: '端口号',
+                hintText: '8123',
+              ),
+              onChanged: (value) {
+                if (value.isEmpty) {
+                  controller.port.value = 8123;
+                } else {
+                  controller.port.value = int.parse(value);
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'nodeId',
+                hintText: 'node1',
+              ),
+              onChanged: (value) {
+                if (value.isEmpty) {
+                  controller.nodeId.value = "node1";
+                } else {
+                  controller.nodeId.value = value;
+                }
+              },
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccessKeyInput() {
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              maxLines: 2,
+              onChanged: (value) {
+                if (value.isNotEmpty) {
+                  controller.key.value = value;
+                }
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'HA Access Key',
+                hintText: 'xxx',
+              ),
             ),
           ),
         ],
@@ -85,31 +158,10 @@ class DesktopView extends GetView<DesktopController> {
     );
   }
 
-  Widget _buildUseUsbButton() {
-    return Obx(() => Row(children: [
-          const Text("使用USB连接手机", style: TextStyle(color: Colors.blueAccent, fontSize: 20)),
-          const Spacer(),
-          Switch(
-              value: controller.isUsbMode.value,
-              onChanged: (v) {
-                controller.isUsbMode.value = v;
-                controller.saveParas();
-                if (v) {
-                  Get.defaultDialog(
-                    title: "使用USB连接",
-                    titleStyle: const TextStyle(fontWeight: FontWeight.normal),
-                    middleText: "使用前先打开手机的 “USB调试” 模式\n由于不同品牌的手机打开USB调试模式的方法不一样\n这里还请自行搜索",
-                    textConfirm: "好的",
-                    onConfirm: () => Get.back(),
-                  );
-                }
-              })
-        ]));
-  }
-
   Widget _buildStartUpButton() {
     return Obx(() => Row(children: [
-          const Text("开机自启动", style: TextStyle(color: Colors.blueAccent, fontSize: 20)),
+          const Text("开机自启动",
+              style: TextStyle(color: Colors.blueAccent, fontSize: 20)),
           const Spacer(),
           Switch(
               value: controller.isAutoStart.value,
@@ -126,9 +178,11 @@ class DesktopView extends GetView<DesktopController> {
       child: Row(
         children: [
           Expanded(child: MoveWindow()),
-          MinimizeWindowButton(colors: WindowButtonColors(iconNormal: Colors.white)),
+          MinimizeWindowButton(
+              colors: WindowButtonColors(iconNormal: Colors.white)),
           CloseWindowButton(
-            colors: WindowButtonColors(iconNormal: Colors.white, mouseOver: Colors.red),
+            colors: WindowButtonColors(
+                iconNormal: Colors.white, mouseOver: Colors.red),
             onPressed: () {
               appWindow.hide();
             },
@@ -151,11 +205,16 @@ class DesktopView extends GetView<DesktopController> {
               min: 0,
               max: 3000,
               stepSize: 1,
-              values: SfRangeValues(controller.minSensorValue.value.toDouble(), controller.maxSensorValue.value.toDouble()),
+              values: SfRangeValues(controller.minSensorValue.value.toDouble(),
+                  controller.maxSensorValue.value.toDouble()),
               onChanged: (v) {
+                controller.pause.value = true;
                 controller.minSensorValue.value = v.start.round();
                 controller.maxSensorValue.value = v.end.round();
                 controller.saveParas();
+              },
+              onChangeEnd: (v){
+                controller.pause.value = false;
               },
             ),
           ],
@@ -175,12 +234,17 @@ class DesktopView extends GetView<DesktopController> {
               min: 0,
               max: 100,
               stepSize: 1,
-              values: SfRangeValues(controller.minBrightness.value.toDouble(), controller.maxBrightness.value.toDouble()),
+              values: SfRangeValues(controller.minBrightness.value.toDouble(),
+                  controller.maxBrightness.value.toDouble()),
               onChanged: (v) {
+                controller.pause.value = true;
                 controller.minBrightness.value = v.start.round();
                 controller.maxBrightness.value = v.end.round();
                 controller.saveParas();
               },
+              onChangeEnd: (v){
+                controller.pause.value = false;
+              }
             ),
           ],
         ));
