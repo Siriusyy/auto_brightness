@@ -17,6 +17,8 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.0.0'
+          cache: true
+          architecture: x64
 
       - run: flutter config --enable-windows-desktop
 
@@ -27,4 +29,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: windows-app
-          path: build/windows/runner/Release/*
+          path: build/windows/runner/Release/*.zip
