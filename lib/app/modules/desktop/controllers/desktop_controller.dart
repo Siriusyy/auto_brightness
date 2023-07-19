@@ -52,7 +52,7 @@ class DesktopController extends GetxController {
           }),
         );
         final data = jsonDecode(response.data) as Map<String, dynamic>;
-        sensorValue.value = int.tryParse(data['value'].toString()) ?? 0;
+        sensorValue.value = int.tryParse(data['state'].toString()) ?? 0;
       } catch (e) {
       }
     });
