@@ -25,9 +25,9 @@ class DesktopView extends GetView<DesktopController> {
                     children: [
                       _buildControlBrightness(),
                       _buildControlSensor(),
-                      _buildStartUpButton(),
                       _buildIpAndPortInput(),
                       _buildAccessKeyInput(),
+                      _buildStartUpButton(),
                       // _buildSysKeyButton(),
                     ],
                   ),
@@ -86,7 +86,7 @@ class DesktopView extends GetView<DesktopController> {
                 labelText: 'HA地址',
                 hintText: 'localhost',
               ),
-              controller: TextEditingController(text: controller.ip.value),
+              controller: controller.ipController,
             ),
           ),
           const SizedBox(width: 10),
@@ -103,7 +103,7 @@ class DesktopView extends GetView<DesktopController> {
                 labelText: '端口号',
                 hintText: '8123',
               ),
-              controller: TextEditingController(text: controller.port.value.toString()),
+              controller: controller.portController,
               onChanged: (value) {
                 if (value.isEmpty) {
                   controller.port.value = 8123;
@@ -128,7 +128,7 @@ class DesktopView extends GetView<DesktopController> {
                   controller.nodeId.value = value;
                 }
               },
-              controller: TextEditingController(text: controller.nodeId.value),
+              controller: controller.nodeController,
             ),
           )
         ],
@@ -154,7 +154,7 @@ class DesktopView extends GetView<DesktopController> {
                 labelText: 'HA Access Key',
                 hintText: 'xxx',
               ),
-              controller: TextEditingController(text: controller.key.value),
+              controller: controller.keyController,
             ),
           ),
         ],
@@ -163,18 +163,28 @@ class DesktopView extends GetView<DesktopController> {
   }
 
   Widget _buildStartUpButton() {
-    return Obx(() => Row(children: [
+    return Obx(() => Container(
+        margin: const EdgeInsets.only(top: 15),
+        child: Row(children: [
           const Text("开机自启动",
               style: TextStyle(color: Colors.blueAccent, fontSize: 20)),
-          const Spacer(),
           Switch(
               value: controller.isAutoStart.value,
               onChanged: (v) {
                 controller.isAutoStart.value = v;
                 controller.setupStartUp(v);
                 controller.saveParas();
-              })
-        ]));
+              }),
+          const Spacer(),
+          const Text("暂停",
+              style: TextStyle(color: Colors.blueAccent, fontSize: 20)),
+          Switch(
+              value: controller.pause.value,
+              onChanged: (v) {
+                controller.pause.value = v;
+                controller.saveParas();
+              }),
+        ])));
   }
 
   Widget _buildTitleBar() {
@@ -217,7 +227,7 @@ class DesktopView extends GetView<DesktopController> {
                 controller.maxSensorValue.value = v.end.round();
                 controller.saveParas();
               },
-              onChangeEnd: (v){
+              onChangeEnd: (v) {
                 controller.pause.value = false;
               },
             ),

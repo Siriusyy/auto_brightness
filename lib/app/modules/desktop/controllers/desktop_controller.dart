@@ -34,6 +34,11 @@ class DesktopController extends GetxController {
   static int nextBrightness = 0;
 
   final isAutoStart = false.obs;
+  late TextEditingController portController = TextEditingController();
+  late TextEditingController ipController = TextEditingController();
+  late TextEditingController nodeController = TextEditingController();
+  late TextEditingController keyController = TextEditingController();
+
 
   Future<void> startHttpService() async {
     Timer.periodic(const Duration(seconds: 1), (timer) async {
@@ -49,7 +54,6 @@ class DesktopController extends GetxController {
         final data = jsonDecode(response.data) as Map<String, dynamic>;
         sensorValue.value = int.tryParse(data['value'].toString()) ?? 0;
       } catch (e) {
-        print(e);
       }
     });
   }
@@ -163,6 +167,11 @@ class DesktopController extends GetxController {
     ip.value = prefs.getString("ip")!;
     nodeId.value = prefs.getString("nodeId")!;
     key.value = prefs.getString("key")!;
+    // 在这里可以设置默认文本值
+    portController.text = port.value.toString();
+    ipController.text = ip.value.toString();
+    nodeController.text = nodeId.value.toString();
+    keyController.text = key.value.toString();
   }
 
   Future<void> saveParas() async {
