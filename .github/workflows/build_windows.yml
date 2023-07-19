@@ -18,6 +18,8 @@ jobs:
         with:
           flutter-version: '3.0.0'
 
+      - run: flutter config --enable-windows-desktop
+
       - name: Build Windows Release
         run: flutter build windows
 
