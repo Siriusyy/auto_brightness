@@ -51,8 +51,7 @@ class DesktopController extends GetxController {
             "content-type": "application/json"
           }),
         );
-        final data = jsonDecode(response.data) as Map<String, dynamic>;
-        double doubleValue = double.tryParse(data['state'].toString()) ?? 0;
+        double doubleValue = double.tryParse(response.data['state'].toString()) ?? 0;
         sensorValue.value = doubleValue.round();
       } catch (e) {
       }
