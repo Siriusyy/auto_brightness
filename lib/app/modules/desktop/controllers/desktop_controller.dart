@@ -42,7 +42,7 @@ class DesktopController extends GetxController {
 
   Future<void> startHttpService() async {
     Timer.periodic(const Duration(seconds: 1), (timer) async {
-      final url = 'http://$ip:$port/states/$nodeId';
+      final url = 'http://$ip:$port/api/states/$nodeId';
       try {
         final response = await Dio().get(
           url,
