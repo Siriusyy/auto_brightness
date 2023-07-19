@@ -27,8 +27,7 @@ jobs:
           flutter_distributor package --platform=windows --targets=exe
 
       - name: Upload EXE artifact
-        uses: shogo82148/actions-upload-release-asset@v1
+        uses: actions/upload-artifact@v2
         with:
-          upload_url: ${{ needs.get-release.outputs.upload_url }}
-          asset_path: dist/*/*
-          overwrite: true
+          name: windows-app
+          path: build/windows/runner/Release/*.exe
